@@ -3,12 +3,28 @@
 // https://www.youtube.com/channel/UCBqoH73F31mbhyLkG3wj1HA
 
 #include <EEPROM.h>
-#include <Arduboy.h>
-Arduboy display;
+#include <Arduboy2.h>
+#include <ArduboyPlaytune.h>
+
+Arduboy2 display;
+ArduboyPlaytune tunes(display.audio.enabled);
 
 void setup() {
   display.begin();
+
+  // audio setup
+  tunes.initChannel(PIN_SPEAKER_1);
+#ifndef AB_DEVKIT
+  // if not a DevKit
+  tunes.initChannel(PIN_SPEAKER_2);
+#else
+  // if it's a DevKit
+  tunes.initChannel(PIN_SPEAKER_1); // use the same pin for both channels
+  tunes.toneMutesScore(true);       // mute the score when a tone is sounding
+#endif
 }
+
+#define EEPROM_SCORES EEPROM_STORAGE_SPACE_START
 
 #define ONPU_HI_16    0
 #define ONPU_LO_16   64
@@ -144,14 +160,14 @@ void loop() {
   #define FPSDELAY      1000/30
 
 //  for (int i = 0; i < 10; i++) {
-//    EEPROM.write(i*2,   0xFF);
-//    EEPROM.write(i*2+1, 0xFF);
+//    EEPROM.update(i*2+EEPROM_SCORES,   0xFF);
+//    EEPROM.update(i*2+1+EEPROM_SCORES, 0xFF);
 //  }
 
   for (int i = 0; i < 10; i++) {
-    hi_score[i] = EEPROM.read(i*2);
+    hi_score[i] = EEPROM.read(i*2+EEPROM_SCORES);
     hi_score[i] <<= 8;
-    hi_score[i] += EEPROM.read(i*2+1);
+    hi_score[i] += EEPROM.read(i*2+1+EEPROM_SCORES);
     if (hi_score[i] == 0xFFFF) {
       hi_score[i] = 0;
       break;
@@ -218,8 +234,8 @@ void loop() {
              }
              if (save_flag) {
                for (int i = 0; i < 10; i++) {
-                 EEPROM.write(i*2,   ((hi_score[i]) >> 8 & 0xFF));
-                 EEPROM.write(i*2+1, hi_score[i] & 0xFF);
+                 EEPROM.update(i*2+EEPROM_SCORES,   ((hi_score[i]) >> 8 & 0xFF));
+                 EEPROM.update(i*2+1+EEPROM_SCORES, hi_score[i] & 0xFF);
                }
              }
              state = state_ranking;
@@ -230,7 +246,7 @@ void loop() {
          //display.setCursor(0,10); display.print(F("COUNT:"));display.print(count);
 
          if (input & (A_BUTTON | B_BUTTON)) {
-           if (!display.tunes.playing()) {
+           if (!tunes.playing()) {
              if (!now_push) {
                count = 0;
                switch (fase) {
@@ -239,7 +255,7 @@ void loop() {
                    super_bonus = false;
                    if (input & B_BUTTON) {
                      fase = fase_1_saru;
-                     display.tunes.playScore(saruoto_1);
+                     tunes.playScore(saruoto_1);
                    } else {
                      fase = fase_start;
                    }
@@ -247,7 +263,7 @@ void loop() {
                  case fase_1_saru:
                    if (input & B_BUTTON) {
                      fase = fase_2_gorira;
-                     display.tunes.playScore(saruoto_2);
+                     tunes.playScore(saruoto_2);
                    } else {
                      fase = fase_start;
                    }
@@ -255,7 +271,7 @@ void loop() {
                  case fase_2_gorira:
                    if (input & B_BUTTON) {
                      fase = fase_3_chinpanji;
-                     display.tunes.playScore(saruoto_3);
+                     tunes.playScore(saruoto_3);
                      score = score + bonus;
                    } else {
                      fase = fase_start;
@@ -264,7 +280,7 @@ void loop() {
                  case fase_3_chinpanji:
                    if (input & B_BUTTON) {
                      fase = fase_4_saru;
-                     display.tunes.playScore(saruoto_4);
+                     tunes.playScore(saruoto_4);
                    } else {
                      fase = fase_start;
                    }
@@ -272,7 +288,7 @@ void loop() {
                  case fase_4_saru:
                    if (input & B_BUTTON) {
                      fase = fase_5_gorira;
-                     display.tunes.playScore(saruoto_5);
+                     tunes.playScore(saruoto_5);
                    } else {
                      fase = fase_start;
                    }
@@ -280,7 +296,7 @@ void loop() {
                  case fase_5_gorira:
                    if (input & B_BUTTON) {
                      fase = fase_6_chinpanji;
-                     display.tunes.playScore(saruoto_6);
+                     tunes.playScore(saruoto_6);
                      score = score + bonus;
                    } else {
                      fase = fase_start;
@@ -289,18 +305,18 @@ void loop() {
                  case fase_6_chinpanji:
                    if (input & A_BUTTON) {
                      fase = fase_7_saru;
-                     display.tunes.playScore(saruoto_7);
+                     tunes.playScore(saruoto_7);
                      super_bonus = true;
                    } else {
                      fase = fase_1_saru;
-                     display.tunes.playScore(saruoto_1);
+                     tunes.playScore(saruoto_1);
                      bonus = 1;
                    }
                    break;
                  case fase_7_saru:
                    if (input & A_BUTTON) {
                      fase = fase_8_gorira;
-                     display.tunes.playScore(saruoto_8);
+                     tunes.playScore(saruoto_8);
                    } else {
                      fase = fase_start;
                    }
@@ -308,7 +324,7 @@ void loop() {
                  case fase_8_gorira:
                    if (input & A_BUTTON) {
                      fase = fase_9_saru;
-                     display.tunes.playScore(saruoto_9);
+                     tunes.playScore(saruoto_9);
                    } else {
                      fase = fase_start;
                    }
@@ -316,7 +332,7 @@ void loop() {
                  case fase_9_saru:
                    if (input & A_BUTTON) {
                      fase = fase_10_gorira;
-                     display.tunes.playScore(saruoto_10);
+                     tunes.playScore(saruoto_10);
                    } else {
                      fase = fase_start;
                    }
@@ -324,7 +340,7 @@ void loop() {
                  case fase_10_gorira:
                    if (input & A_BUTTON) {
                      fase = fase_11_saru;
-                     display.tunes.playScore(saruoto_11);
+                     tunes.playScore(saruoto_11);
                    } else {
                      fase = fase_start;
                    }
@@ -332,7 +348,7 @@ void loop() {
                  case fase_11_saru:
                    if (input & A_BUTTON) {
                      fase = fase_12_gorira;
-                     display.tunes.playScore(saruoto_12);
+                     tunes.playScore(saruoto_12);
                    } else {
                      fase = fase_start;
                    }
@@ -340,7 +356,7 @@ void loop() {
                  case fase_12_gorira:
                    if (input & A_BUTTON) {
                      fase = fase_13_saru;
-                     display.tunes.playScore(saruoto_13);
+                     tunes.playScore(saruoto_13);
                      bonus++;
                    } else {
                      fase = fase_start;
